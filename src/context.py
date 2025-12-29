@@ -6,6 +6,8 @@ def tokenize(line):
     for part in line.split():
         if part.isdigit():
             tokens.append(("NUMBER", int(part)))
+        elif part == "=":
+            tokens.append(("EQUALS", part))
         else:
             tokens.append(("WORD", part))
 
@@ -13,6 +15,8 @@ def tokenize(line):
 
 
 def run(filename):
+    memory = {}
+
     with open(filename, "r") as file:
         lines = file.readlines()
 
@@ -24,18 +28,32 @@ def run(filename):
 
         tokens = tokenize(line)
 
-        command_type, command_value = tokens[0]
+        # Variable declaration: let x = 10
+        if (
+            tokens[0] == ("WORD", "let") and
+            tokens[1][0] == "WORD" and
+            tokens[2] == ("EQUALS", "=") and
+            tokens[3][0] == "NUMBER"
+        ):
+            var_name = tokens[1][1]
+            value = tokens[3][1]
+            memory[var_name] = value
 
-        if command_type == "WORD" and command_value == "print":
+        # Print statement: print x OR print 10
+        elif tokens[0] == ("WORD", "print"):
             value_type, value = tokens[1]
 
             if value_type == "NUMBER":
                 print(value)
+            elif value_type == "WORD":
+                if value not in memory:
+                    raise Exception(f"Undefined variable: {value}")
+                print(memory[value])
             else:
-                raise Exception("print expects a number")
+                raise Exception("Invalid print argument")
 
         else:
-            raise Exception(f"Unknown command: {command_value}")
+            raise Exception(f"Invalid syntax: {line}")
 
 
 if __name__ == "__main__":
