@@ -35,18 +35,35 @@ CONTEXT treats programs as structured reasoning artifacts, not just instructions
 
 ## Current Status
 
-This project is in its **early learning and design phase**.
+This project has a **working minimal interpreter** implemented in Python.
 
-Planned progression:
-1. Minimal interpreter that reads and executes simple commands
-2. Clear lexer and parser stages
-3. Explicit execution model
-4. Gradual introduction of variables, expressions, and control flow
-5. Early support for intent and reasoning-oriented constructs
+### What's Working
 
-Nothing is rushed. Every step is documented.
+✅ **Basic Interpreter** - A simple interpreter that executes `.ctxt` files  
+✅ **Tokenization** - Breaks source code into meaningful tokens  
+✅ **Variable Declaration** - `let` statements for storing values  
+✅ **Arithmetic Operations** - `add()`, `subtract()`, `multiply()`, `divide()` functions  
+✅ **Print Statements** - Display values and computation results  
+✅ **Nested Expressions** - Function calls can be nested and composed  
 
----
+### Example Programs
+
+## Project Structure
+
+```
+CONTEXT/
+├── README.md
+├── .gitignore
+├── .python-version
+├── src/
+│   └── context.py          # Main interpreter implementation
+└── examples/
+    ├── test1.ctxt          # Basic print statements
+    ├── test2.ctxt          # Variable declarations
+    └── test3.ctxt          # Arithmetic operations
+```
+
+The structure will evolve as more features are added.
 
 ## Project Structure (Planned)
 
@@ -69,9 +86,43 @@ The structure may evolve as understanding deepens.
 
 ---
 
-## Documentation Approach
+---
 
-Documentation is a core feature of this project, not an afterthought.
+## Getting Started
+
+### Prerequisites
+
+- Python 3.x
+
+### Running CONTEXT Programs
+
+```bash
+python src/context.py examples/test3.ctxt
+```
+
+### Language Syntax
+
+**Variable Declaration:**
+```context
+let variable_name = value
+```
+
+**Arithmetic Functions:**
+```context
+add(x, y)
+subtract(x, y)
+multiply(x, y)
+divide(x, y)
+```
+
+**Print Statement:**
+```context
+print value
+```
+
+---
+
+## Documentation Approacheature of this project, not an afterthought.
 
 For each step, the documentation will include:
 - What is being built
