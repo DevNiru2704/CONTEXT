@@ -122,7 +122,8 @@ print value
 
 ---
 
-## Documentation Approacheature of this project, not an afterthought.
+## Documentation Approach
+Documentation is a core feature of this project, not an afterthought.
 
 For each step, the documentation will include:
 - What is being built
