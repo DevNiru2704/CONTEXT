@@ -2,16 +2,60 @@ import sys
 
 def tokenize(line):
     tokens = []
+    current = ""
 
-    for part in line.split():
-        if part.isdigit():
-            tokens.append(("NUMBER", int(part)))
-        elif part == "=":
-            tokens.append(("EQUALS", part))
+    for char in line:
+        if char.isalnum() or char == "_":
+            current += char
         else:
-            tokens.append(("WORD", part))
+            if current:
+                tokens.append(current)
+                current = ""
+            if char in "(),=":
+                tokens.append(char)
+
+    if current:
+        tokens.append(current)
 
     return tokens
+
+
+def parse_value(tokens, memory):
+    token = tokens.pop(0)
+
+    # Number
+    if token.isdigit():
+        return int(token)
+
+    # Variable
+    if token in memory:
+        return memory[token]
+
+    # Function call
+    if token in ("add", "subtract", "multiply", "divide"):
+        if tokens.pop(0) != "(":
+            raise Exception("Expected '('")
+
+        left = parse_value(tokens, memory)
+
+        if tokens.pop(0) != ",":
+            raise Exception("Expected ','")
+
+        right = parse_value(tokens, memory)
+
+        if tokens.pop(0) != ")":
+            raise Exception("Expected ')'")
+
+        if token == "add":
+            return left + right
+        if token == "subtract":
+            return left - right
+        if token == "multiply":
+            return left * right
+        if token == "divide":
+            return left // right
+
+    raise Exception(f"Invalid value: {token}")
 
 
 def run(filename):
@@ -28,29 +72,20 @@ def run(filename):
 
         tokens = tokenize(line)
 
-        # Variable declaration: let x = 10
-        if (
-            tokens[0] == ("WORD", "let") and
-            tokens[1][0] == "WORD" and
-            tokens[2] == ("EQUALS", "=") and
-            tokens[3][0] == "NUMBER"
-        ):
-            var_name = tokens[1][1]
-            value = tokens[3][1]
+        # let x = <value>
+        if tokens[0] == "let":
+            var_name = tokens[1]
+
+            if tokens[2] != "=":
+                raise Exception("Expected '='")
+
+            value = parse_value(tokens[3:], memory)
             memory[var_name] = value
 
-        # Print statement: print x OR print 10
-        elif tokens[0] == ("WORD", "print"):
-            value_type, value = tokens[1]
-
-            if value_type == "NUMBER":
-                print(value)
-            elif value_type == "WORD":
-                if value not in memory:
-                    raise Exception(f"Undefined variable: {value}")
-                print(memory[value])
-            else:
-                raise Exception("Invalid print argument")
+        # print <value>
+        elif tokens[0] == "print":
+            value = parse_value(tokens[1:], memory)
+            print(value)
 
         else:
             raise Exception(f"Invalid syntax: {line}")

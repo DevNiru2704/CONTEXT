@@ -1,0 +1,5 @@
+let x = 10
+let y = add(x, 5)
+let z = multiply(y, 2)
+print z
+print add(3, multiply(2, 4))
