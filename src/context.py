@@ -1,10 +1,14 @@
 import sys
 
 # -----------------------
-# AST Node Definitions
+# AST Nodes
 # -----------------------
 
 class NumberNode:
+    def __init__(self, value):
+        self.value = value
+
+class BooleanNode:
     def __init__(self, value):
         self.value = value
 
@@ -17,6 +21,11 @@ class BinaryOpNode:
         self.op = op
         self.left = left
         self.right = right
+
+class IfNode:
+    def __init__(self, condition, body):
+        self.condition = condition
+        self.body = body
 
 
 # -----------------------
@@ -34,7 +43,7 @@ def tokenize(line):
             if current:
                 tokens.append(current)
                 current = ""
-            if char in "(),=":
+            if char in "(),=:": 
                 tokens.append(char)
 
     if current:
@@ -47,24 +56,14 @@ def tokenize(line):
 # Parser
 # -----------------------
 
-def parse_value(tokens):
-    token = tokens.pop(0)
-
-    # Number
-    if token.isdigit():
-        return NumberNode(int(token))
-
-    # Variable
-    if token.isidentifier():
-        return VariableNode(token)
-
-    raise Exception(f"Invalid value: {token}")
-
-
 def parse_expression(tokens):
     token = tokens.pop(0)
 
-    if token in ("add", "subtract", "multiply", "divide"):
+    # Function calls FIRST
+    if token in (
+        "add", "subtract", "multiply", "divide",
+        "equals", "greater", "less", "greater_equal"
+    ):
         if tokens.pop(0) != "(":
             raise Exception("Expected '('")
 
@@ -80,9 +79,16 @@ def parse_expression(tokens):
 
         return BinaryOpNode(token, left, right)
 
-    # fallback to value
-    tokens.insert(0, token)
-    return parse_value(tokens)
+    # Number
+    if token.isdigit():
+        return NumberNode(int(token))
+
+    # Variable
+    if token.isidentifier():
+        return VariableNode(token)
+
+    raise Exception(f"Invalid expression: {token}")
+
 
 
 # -----------------------
@@ -91,6 +97,9 @@ def parse_expression(tokens):
 
 def evaluate(node, memory):
     if isinstance(node, NumberNode):
+        return node.value
+
+    if isinstance(node, BooleanNode):
         return node.value
 
     if isinstance(node, VariableNode):
@@ -111,12 +120,15 @@ def evaluate(node, memory):
         if node.op == "divide":
             return left // right
 
-    raise Exception("Unknown AST node")
+        if node.op == "equals":
+            return left == right
+        if node.op == "greater":
+            return left > right
+        if node.op == "less":
+            return left < right
 
+    raise Exception("Unknown node")
 
-# -----------------------
-# Runner
-# -----------------------
 
 def run(filename):
     memory = {}
@@ -124,9 +136,12 @@ def run(filename):
     with open(filename, "r") as file:
         lines = file.readlines()
 
-    for line in lines:
-        line = line.strip()
+    i = 0
+    while i < len(lines):
+        line = lines[i].rstrip()
+
         if not line:
+            i += 1
             continue
 
         tokens = tokenize(line)
@@ -134,9 +149,6 @@ def run(filename):
         # let x = <expression>
         if tokens[0] == "let":
             var_name = tokens[1]
-            if tokens[2] != "=":
-                raise Exception("Expected '='")
-
             expr = parse_expression(tokens[3:])
             memory[var_name] = evaluate(expr, memory)
 
@@ -145,8 +157,23 @@ def run(filename):
             expr = parse_expression(tokens[1:])
             print(evaluate(expr, memory))
 
+        # if <condition>:
+        elif tokens[0] == "if":
+            condition = parse_expression(tokens[1:-1])
+
+            i += 1
+            body_line = lines[i].lstrip()
+            body_tokens = tokenize(body_line)
+
+            if evaluate(condition, memory):
+                if body_tokens[0] == "print":
+                    expr = parse_expression(body_tokens[1:])
+                    print(evaluate(expr, memory))
+
         else:
             raise Exception(f"Invalid syntax: {line}")
+
+        i += 1
 
 
 if __name__ == "__main__":

@@ -1,0 +1,8 @@
+let x = 10
+let y = 20
+
+if greater(y, x):
+    print y
+
+if equals(x, 10):
+    print add(x, 5)
