@@ -1,5 +1,28 @@
 import sys
 
+# -----------------------
+# AST Node Definitions
+# -----------------------
+
+class NumberNode:
+    def __init__(self, value):
+        self.value = value
+
+class VariableNode:
+    def __init__(self, name):
+        self.name = name
+
+class BinaryOpNode:
+    def __init__(self, op, left, right):
+        self.op = op
+        self.left = left
+        self.right = right
+
+
+# -----------------------
+# Lexer
+# -----------------------
+
 def tokenize(line):
     tokens = []
     current = ""
@@ -20,43 +43,80 @@ def tokenize(line):
     return tokens
 
 
-def parse_value(tokens, memory):
+# -----------------------
+# Parser
+# -----------------------
+
+def parse_value(tokens):
     token = tokens.pop(0)
 
     # Number
     if token.isdigit():
-        return int(token)
+        return NumberNode(int(token))
 
     # Variable
-    if token in memory:
-        return memory[token]
+    if token.isidentifier():
+        return VariableNode(token)
 
-    # Function call
+    raise Exception(f"Invalid value: {token}")
+
+
+def parse_expression(tokens):
+    token = tokens.pop(0)
+
     if token in ("add", "subtract", "multiply", "divide"):
         if tokens.pop(0) != "(":
             raise Exception("Expected '('")
 
-        left = parse_value(tokens, memory)
+        left = parse_expression(tokens)
 
         if tokens.pop(0) != ",":
             raise Exception("Expected ','")
 
-        right = parse_value(tokens, memory)
+        right = parse_expression(tokens)
 
         if tokens.pop(0) != ")":
             raise Exception("Expected ')'")
 
-        if token == "add":
+        return BinaryOpNode(token, left, right)
+
+    # fallback to value
+    tokens.insert(0, token)
+    return parse_value(tokens)
+
+
+# -----------------------
+# Interpreter
+# -----------------------
+
+def evaluate(node, memory):
+    if isinstance(node, NumberNode):
+        return node.value
+
+    if isinstance(node, VariableNode):
+        if node.name not in memory:
+            raise Exception(f"Undefined variable: {node.name}")
+        return memory[node.name]
+
+    if isinstance(node, BinaryOpNode):
+        left = evaluate(node.left, memory)
+        right = evaluate(node.right, memory)
+
+        if node.op == "add":
             return left + right
-        if token == "subtract":
+        if node.op == "subtract":
             return left - right
-        if token == "multiply":
+        if node.op == "multiply":
             return left * right
-        if token == "divide":
+        if node.op == "divide":
             return left // right
 
-    raise Exception(f"Invalid value: {token}")
+    raise Exception("Unknown AST node")
 
+
+# -----------------------
+# Runner
+# -----------------------
 
 def run(filename):
     memory = {}
@@ -66,26 +126,24 @@ def run(filename):
 
     for line in lines:
         line = line.strip()
-
         if not line:
             continue
 
         tokens = tokenize(line)
 
-        # let x = <value>
+        # let x = <expression>
         if tokens[0] == "let":
             var_name = tokens[1]
-
             if tokens[2] != "=":
                 raise Exception("Expected '='")
 
-            value = parse_value(tokens[3:], memory)
-            memory[var_name] = value
+            expr = parse_expression(tokens[3:])
+            memory[var_name] = evaluate(expr, memory)
 
-        # print <value>
+        # print <expression>
         elif tokens[0] == "print":
-            value = parse_value(tokens[1:], memory)
-            print(value)
+            expr = parse_expression(tokens[1:])
+            print(evaluate(expr, memory))
 
         else:
             raise Exception(f"Invalid syntax: {line}")
